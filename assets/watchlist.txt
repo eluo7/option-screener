@@ -1,0 +1,24 @@
+# Wheel Strategy 自选股列表
+# 每行一个股票代码，以 # 开头的行为注释
+
+# ===== 核心持仓 =====
+NVDA.US
+AAPL.US
+SPY.US
+
+# ===== 科技龙头 =====
+MSFT.US
+GOOGL.US
+
+# ===== ETF =====
+QQQ.US
+
+# ===== 其他蓝筹 =====
+JPM.US
+BRK.B.US
+
+# ===== 杠杆/高波动 =====
+TQQQ.US
+SOXL.US
+SNDK.US
+MU.US
