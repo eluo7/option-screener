@@ -318,37 +318,40 @@ class OptionScreener:
     def get_available_expiry_dates(self, symbol: str,
                                     days_min: int = 0,
                                     days_max: int = 45) -> List[str]:
-        """获取指定标的所有可用到期日（在days_min到days_max范围内）"""
+        """获取指定标的所有可用到期日（在days_min到days_max范围内）
+
+        注意：由于 longbridge CLI 的 bug，不带 --date 参数时无法正确返回到期日列表，
+        因此需要逐个日期测试以找出实际有期权数据的日期。
+        """
         available_dates = []
 
-        # 生成候选日期列表：每周五（美股期权通常周五到期）
         today = datetime.now()
         for days in range(days_min, days_max + 1):
             candidate_date = today + timedelta(days=days)
-            # 只考虑周五（weekday=4）和某些特定日期
-            if candidate_date.weekday() == 4 or days in [0, 1, 2, 3, 7, 14, 21, 28, 35, 42]:
-                date_str = candidate_date.strftime('%Y-%m-%d')
+            date_str = candidate_date.strftime('%Y-%m-%d')
 
-                # 测试这个日期是否有期权数据
-                try:
-                    result = subprocess.run(
-                        ['longbridge', 'option', 'chain', symbol,
-                         '--date', date_str, '--format', 'json'],
-                        capture_output=True, text=True, timeout=5
-                    )
-                    if result.returncode == 0 and result.stdout:
-                        data = json.loads(result.stdout)
-                        if data and len(data) > 0:
-                            # 确保有实际的期权合约
-                            has_valid_options = any(
-                                float(item.get('put_last', 0)) > 0 or
-                                float(item.get('call_last', 0)) > 0
-                                for item in data
-                            )
-                            if has_valid_options:
-                                available_dates.append(date_str)
-                except:
-                    continue
+            # 测试这个日期是否有期权数据
+            try:
+                result = subprocess.run(
+                    ['longbridge', 'option', 'chain', symbol,
+                     '--date', date_str, '--format', 'json'],
+                    capture_output=True, text=True, timeout=5
+                )
+                if result.returncode == 0 and result.stdout:
+                    data = json.loads(result.stdout)
+                    if data and len(data) > 0:
+                        # 确保有实际的期权合约
+                        has_valid_options = any(
+                            float(item.get('put_last', 0)) > 0 or
+                            float(item.get('call_last', 0)) > 0
+                            for item in data
+                        )
+                        if has_valid_options:
+                            available_dates.append(date_str)
+            except Exception as e:
+                # 记录错误但继续处理其他日期
+                print(f"   ⚠️  检查 {date_str} 时出错: {e}", file=sys.stderr)
+                continue
 
         return sorted(available_dates)
 
